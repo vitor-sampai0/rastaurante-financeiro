@@ -26,3 +26,8 @@ export function canManage(role: Role) {
 export function canAdmin(role: Role) {
   return new Set<Role>([Role.OWNER, Role.ADMIN]).has(role);
 }
+
+export function canOperateCash(role: Role) {
+  return new Set<Role>([Role.OWNER, Role.ADMIN, Role.MANAGER, Role.OPERATOR]).has(role);
+}
+

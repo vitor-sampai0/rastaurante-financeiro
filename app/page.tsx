@@ -37,7 +37,7 @@ export default function Home() {
         : null;
       if (!response.ok)
         setError(result?.error ?? "Não foi possível concluir a operação");
-      else router.push("/dashboard");
+      else router.push(result?.mustChangePassword ? "/change-password" : "/dashboard");
     } catch {
       setError("Não foi possível conectar ao servidor. Tente novamente.");
     } finally {

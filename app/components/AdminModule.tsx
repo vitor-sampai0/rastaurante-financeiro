@@ -43,6 +43,14 @@ const endpoints: Record<Module, string> = {
   audit: "/api/audit",
   reports: "/api/reports",
 };
+type Role = "OWNER" | "ADMIN" | "MANAGER" | "OPERATOR" | "VIEWER";
+const allowedModules: Record<Role, Module[]> = {
+  OWNER: ["transactions", "categories", "accounts", "cash", "suppliers", "payables", "employees", "payroll", "inventory", "team", "audit", "reports"],
+  ADMIN: ["transactions", "categories", "accounts", "cash", "suppliers", "payables", "employees", "payroll", "inventory", "team", "audit", "reports"],
+  MANAGER: ["transactions", "categories", "cash", "suppliers", "payables", "inventory"],
+  OPERATOR: ["transactions", "cash", "suppliers", "payables", "inventory"],
+  VIEWER: ["transactions", "inventory"],
+};
 const fields: Record<
   Exclude<Module, "audit" | "reports">,
   { name: string; label: string; type?: string; required?: boolean }[]
@@ -147,7 +155,7 @@ function display(value: unknown) {
   if (typeof value === "object") return "";
   return String(value);
 }
-export default function AdminModule({ module }: { module: Module }) {
+export default function AdminModule({ module, role }: { module: Module; role: Role }) {
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -232,12 +240,27 @@ export default function AdminModule({ module }: { module: Module }) {
       void load();
     }
   }
+  async function closeCash(id: string) {
+    const counted = window.prompt("Valor contado no fechamento");
+    if (counted === null) return;
+    const response = await fetch(`/api/cash-sessions/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ closingCounted: counted }) });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) setError(result.error ?? "Não foi possível fechar o caixa"); else { setMessage(`Caixa fechado. Diferença: ${Number(result.difference ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}`); void load(); }
+  }
+  async function updateTeam(userId: string, action: "resetPassword" | "toggle") {
+    const payload = action === "resetPassword" ? { userId, resetPassword: window.prompt("Nova senha temporária") } : { userId, active: window.confirm("Manter este acesso ativo?") };
+    if (action === "resetPassword" && !payload.resetPassword) return;
+    const response = await fetch("/api/team", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) setError(result.error ?? "Não foi possível atualizar o usuário"); else { setMessage("Equipe atualizada."); void load(); }
+  }
   const formFields =
     module === "cash"
       ? fields.cash
       : module === "team"
         ? fields.team
         : fields[module as Exclude<Module, "audit" | "reports">];
+  if (!allowedModules[role].includes(module)) return <main className="admin-page"><p className="form-error">Você não possui permissão para acessar este módulo.</p></main>;
   return (
     <main className="admin-page">
       <header className="admin-header">
@@ -312,7 +335,7 @@ export default function AdminModule({ module }: { module: Module }) {
                       .map((key) => (
                         <th key={key}>{key}</th>
                       ))}
-                    {(module === "payables" || module === "payroll") && (
+                    {(module === "payables" || module === "payroll" || module === "cash" || module === "team") && (
                       <th>Ação</th>
                     )}
                   </tr>
@@ -326,6 +349,10 @@ export default function AdminModule({ module }: { module: Module }) {
                         .map((key) => (
                           <td key={key}>{display(row[key])}</td>
                         ))}
+                      {module === "cash" && row.status === "OPEN" && (
+                        <td><button className="table-action" onClick={() => closeCash(String(row.id))}>Fechar caixa</button><a className="table-action" href={`/cash/${String(row.id)}`}>Ver fechamento</a></td>
+                      )}
+                      {module === "team" && <td><button className="table-action" onClick={() => updateTeam(String(row.userId ?? row.id), "resetPassword")}>Redefinir senha</button><button className="table-action" onClick={() => updateTeam(String(row.userId ?? row.id), "toggle")}>Alterar acesso</button></td>}
                       {(module === "payables" || module === "payroll") &&
                         row.status !== "PAID" && (
                           <td>

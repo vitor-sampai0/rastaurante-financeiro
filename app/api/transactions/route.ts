@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getRestaurantContext, canWrite } from "@/backend/lib/context";
 import { prisma } from "@/backend/lib/prisma";
+import { audit } from "@/backend/lib/audit";
 
 const transactionSchema = z.object({
   type: z.enum(["INCOME", "EXPENSE"]),
@@ -11,6 +12,7 @@ const transactionSchema = z.object({
   categoryId: z.string().optional(),
   accountId: z.string().optional(),
   paymentMethod: z.enum(["CASH", "PIX", "DEBIT_CARD", "CREDIT_CARD", "BANK_TRANSFER", "BOLETO", "OTHER"]).default("PIX"),
+  cashSessionId: z.string().optional(),
 });
 
 export async function GET() {
@@ -33,7 +35,12 @@ export async function POST(request: Request) {
     data.accountId ? prisma.account.findFirst({ where: { id: data.accountId, restaurantId: context.restaurant.id } }) : null,
   ]);
   if ((data.categoryId && !category) || (data.accountId && !account)) return NextResponse.json({ error: "Referência inválida" }, { status: 400 });
+  if (data.cashSessionId) {
+    const cashSession = await prisma.cashSession.findFirst({ where: { id: data.cashSessionId, restaurantId: context.restaurant.id, status: "OPEN", accountId: data.accountId } });
+    if (!cashSession) return NextResponse.json({ error: "Sessão de caixa inválida ou fechada" }, { status: 400 });
+  }
 
   const transaction = await prisma.transaction.create({ data: { ...data, amount: data.amount.toFixed(2), restaurantId: context.restaurant.id, createdByUserId: context.user.id, occurredAt: data.occurredAt ?? new Date() } });
+  await audit({ restaurantId: context.restaurant.id, actorUserId: context.user.id, action: "CREATE", entity: "Transaction", entityId: transaction.id, data: parsed.data });
   return NextResponse.json(transaction, { status: 201 });
 }

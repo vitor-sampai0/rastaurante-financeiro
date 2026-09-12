@@ -7,7 +7,9 @@ export function jsonError(error: string, status = 400) {
 
 export async function requireApiContext() {
   const context = await getRestaurantContext();
-  return context ? { ctx: context } : { error: jsonError("Não autenticado", 401) };
+  if (!context) return { error: jsonError("Não autenticado", 401) };
+  if (context.user.mustChangePassword) return { error: jsonError("Troque sua senha antes de continuar", 403) };
+  return { ctx: context };
 }
 
 export function decimalToNumber<T>(value: T): T {

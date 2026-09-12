@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { canManage, canWrite } from "@/backend/lib/context";
+import { canManage } from "@/backend/lib/context";
 import { prisma } from "@/backend/lib/prisma";
 import { audit } from "@/backend/lib/audit";
 import { refsBelongToRestaurant } from "@/backend/lib/ownership";
@@ -10,7 +10,7 @@ const schema = z.object({ type: z.enum(["INCOME", "EXPENSE"]).optional(), descri
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireApiContext(); if ("error" in auth) return auth.error;
-  if (!canWrite(auth.ctx.membership.role)) return jsonError("Sem permissão", 403);
+  if (!canManage(auth.ctx.membership.role)) return jsonError("Sem permissão", 403);
   const { id } = await params;
   const current = await prisma.transaction.findFirst({ where: { id, restaurantId: auth.ctx.restaurant.id } });
   if (!current) return jsonError("Movimentação não encontrada", 404);

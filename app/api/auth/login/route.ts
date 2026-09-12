@@ -23,7 +23,22 @@ export async function POST(request: Request) {
     }
 
     await createSession(user.id);
-    return NextResponse.json({ ok: true });
+    const membership = await prisma.restaurantMember.findFirst({
+      where: { userId: user.id, active: true },
+      orderBy: { createdAt: "asc" },
+    });
+    if (membership) {
+      await prisma.auditLog.create({
+        data: {
+          restaurantId: membership.restaurantId,
+          actorUserId: user.id,
+          action: "LOGIN",
+          entity: "Session",
+          data: { role: membership.role },
+        },
+      });
+    }
+    return NextResponse.json({ ok: true, mustChangePassword: user.mustChangePassword });
   } catch {
     return NextResponse.json({ error: "Não foi possível concluir o login" }, { status: 500 });
   }

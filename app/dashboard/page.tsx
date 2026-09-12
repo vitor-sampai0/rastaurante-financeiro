@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
-import { getRestaurantContext } from "@/backend/lib/context";
+import { canAdmin, getRestaurantContext } from "@/backend/lib/context";
 import { prisma } from "@/backend/lib/prisma";
 
 export default async function DashboardPage() {
   const context = await getRestaurantContext();
   if (!context) redirect("/");
+  if (context.user.mustChangePassword) redirect("/change-password");
 
   const [income, expense, pending, recent] = await Promise.all([
     prisma.transaction.aggregate({
@@ -41,8 +42,9 @@ export default async function DashboardPage() {
     });
   const balance =
     Number(income._sum.amount ?? 0) - Number(expense._sum.amount ?? 0);
+  const isAdmin = canAdmin(context.membership.role);
 
-  const links = [
+  const adminLinks = [
     ["/transactions", "Transações"],
     ["/categories", "Categorias"],
     ["/accounts", "Contas"],
@@ -56,6 +58,8 @@ export default async function DashboardPage() {
     ["/audit", "Auditoria"],
     ["/reports", "Relatórios"],
   ];
+  const operationalLinks = [["/transactions", "Transações"], ["/cash", "Caixa"], ["/suppliers", "Fornecedores"], ["/payables", "Contas a pagar"], ["/inventory", "Estoque"]];
+  const links = canAdmin(context.membership.role) ? adminLinks : operationalLinks;
   return (
     <main className="dashboard">
       <header className="dashboard-header">
@@ -74,7 +78,7 @@ export default async function DashboardPage() {
           </a>
         ))}
       </nav>
-      <section className="metric-grid">
+      {isAdmin && <section className="metric-grid">
         <article>
           <span>Receitas</span>
           <strong>{format(income._sum.amount)}</strong>
@@ -92,7 +96,7 @@ export default async function DashboardPage() {
           <strong>{pending._count}</strong>
           <small>{format(pending._sum.amount)}</small>
         </article>
-      </section>
+      </section>}
       <section className="activity">
         <div className="section-heading">
           <div>

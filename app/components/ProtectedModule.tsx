@@ -8,6 +8,8 @@ export default async function ProtectedModule({
 }: {
   module: ComponentProps<typeof AdminModule>["module"];
 }) {
-  if (!(await getRestaurantContext())) redirect("/");
-  return <AdminModule module={module} />;
+  const context = await getRestaurantContext();
+  if (!context) redirect("/");
+  if (context.user.mustChangePassword) redirect("/change-password");
+  return <AdminModule module={module} role={context.membership.role} />;
 }

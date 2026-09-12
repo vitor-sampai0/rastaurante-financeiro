@@ -77,6 +77,7 @@ model User {
   name                  String
   email                 String              @unique
   passwordHash          String
+  mustChangePassword    Boolean             @default(false)
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
   sessions              Session[]
@@ -189,6 +190,7 @@ model Transaction {
   createdByUserId String
   categoryId      String?
   accountId       String?
+  cashSessionId   String?
   type            TransactionType
   description     String
   amount          Decimal         @db.Decimal(14, 2)
@@ -202,10 +204,12 @@ model Transaction {
   creator         User            @relation("TransactionCreator", fields: [createdByUserId], references: [id])
   category        Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   account         Account?        @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  cashSession     CashSession?    @relation(fields: [cashSessionId], references: [id], onDelete: SetNull)
   @@index([restaurantId, occurredAt])
   @@index([restaurantId, type, occurredAt])
   @@index([categoryId])
   @@index([accountId])
+  @@index([cashSessionId])
 }
 
 model AccountsPayable {
@@ -311,6 +315,8 @@ model CashSession {
   closedByUserId  String?
   openingBalance  Decimal           @db.Decimal(14, 2)
   closingCounted  Decimal?          @db.Decimal(14, 2)
+  expectedBalance Decimal?          @db.Decimal(14, 2)
+  difference      Decimal?          @db.Decimal(14, 2)
   openedAt        DateTime          @default(now())
   closedAt        DateTime?
   status          CashSessionStatus @default(OPEN)
@@ -321,6 +327,7 @@ model CashSession {
   account         Account           @relation(fields: [accountId], references: [id], onDelete: Restrict)
   openedBy        User              @relation("CashSessionOpener", fields: [openedByUserId], references: [id])
   closedBy        User?             @relation("CashSessionCloser", fields: [closedByUserId], references: [id])
+  transactions    Transaction[]
   @@index([restaurantId, status, openedAt])
   @@index([accountId, openedAt])
 }
