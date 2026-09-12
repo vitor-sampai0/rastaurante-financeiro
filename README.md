@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Financeiro Restaurante
 
-## Getting Started
+Aplicacao Next.js para gestao financeira e operacional de restaurantes, com PostgreSQL, Prisma, autenticacao por sessao e isolamento por restaurante.
 
-First, run the development server:
+## Desenvolvimento
 
-```bash
+Requisitos: Node.js 22 e PostgreSQL externo ou local. O projeto nao usa Docker.
+
+```powershell
+Copy-Item .env.example .env
+npm install
+npm run db:generate
+npm run db:push
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Configure `DATABASE_URL` no `.env`, por exemplo:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require"
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Comandos uteis: `npm run db:migrate`, `npm run db:studio`, `npm run lint`, `npm run build`.
 
-## Learn More
+## Implementado
 
-To learn more about Next.js, take a look at the following resources:
+- Cadastro transacional de restaurante e usuario proprietario.
+- Login e logout com senha bcrypt e cookie httpOnly de sessao.
+- Contexto de restaurante baseado no membership do usuario.
+- Papeis `OWNER`, `ADMIN`, `MANAGER`, `OPERATOR` e `VIEWER`.
+- Schema PostgreSQL com usuarios, memberships, transacoes, categorias, contas, caixa, fornecedores, contas a pagar, funcionarios, folha, estoque e auditoria.
+- Dashboard com receitas, despesas, saldo, contas pendentes e lancamentos reais.
+- API de leitura e criacao de transacoes com Zod, autenticacao, autorizacao e validacao de referencias no restaurante atual.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Prisma
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+O pacote `prisma@8.0.0-rc.13` presente inicialmente no workspace era a nova CLI de plataforma e nao expunha os comandos ORM `generate`/`validate`; tambem nao havia uma versao publica correspondente de `@prisma/client`. Para manter o projeto executavel com PostgreSQL, o runtime foi alinhado em `prisma`/`@prisma/client` `7.10.0`, usando `@prisma/adapter-pg`. O schema esta em `prisma/schema.prisma` e a URL fica somente na configuracao/env.
 
-## Deploy on Vercel
+## Deploy
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Na Vercel, configure `DATABASE_URL` como variavel de ambiente. Use `npm run build` no build command e aplique as migracoes contra o PostgreSQL gerenciado antes de publicar alteracoes de schema.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Escopo restante
+
+As telas e APIs completas de categorias, contas, caixa, fornecedores, contas a pagar, funcionarios, estoque, equipe, auditoria, relatorios/exportacao e edicao/exclusao de transacoes ainda precisam ser implementadas sobre esta base. Integracoes bancarias, emissao fiscal e folha trabalhista oficial nao fazem parte deste projeto.

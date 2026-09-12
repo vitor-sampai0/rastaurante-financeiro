@@ -1,0 +1,8 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { canWrite } from "@/backend/lib/context";
+import { prisma } from "@/backend/lib/prisma";
+import { audit } from "@/backend/lib/audit";
+import { decimalToNumber, jsonError, requireApiContext } from "@/backend/lib/http";
+const schema = z.object({ closingCounted: z.coerce.number().nonnegative(), notes: z.string().max(1000).nullable().optional() });
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) { const auth = await requireApiContext(); if ("error" in auth) return auth.error; if (!canWrite(auth.ctx.membership.role)) return jsonError("Sem permissão", 403); const { id } = await params; const current = await prisma.cashSession.findFirst({ where: { id, restaurantId: auth.ctx.restaurant.id } }); if (!current) return jsonError("Caixa não encontrado", 404); if (current.status === "CLOSED") return jsonError("Caixa já fechado", 409); const p = schema.safeParse(await request.json().catch(() => null)); if (!p.success) return jsonError("Dados inválidos"); const row = await prisma.cashSession.update({ where: { id }, data: { closingCounted: p.data.closingCounted.toFixed(2), notes: p.data.notes, status: "CLOSED", closedAt: new Date(), closedByUserId: auth.ctx.user.id } }); await audit({ restaurantId: auth.ctx.restaurant.id, actorUserId: auth.ctx.user.id, action: "CLOSE", entity: "CashSession", entityId: id, data: p.data }); return NextResponse.json(decimalToNumber(row)); }

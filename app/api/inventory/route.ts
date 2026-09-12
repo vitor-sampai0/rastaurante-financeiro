@@ -1,0 +1,9 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { canWrite } from "@/backend/lib/context";
+import { prisma } from "@/backend/lib/prisma";
+import { audit } from "@/backend/lib/audit";
+import { decimalToNumber, jsonError, requireApiContext } from "@/backend/lib/http";
+const schema = z.object({ name: z.string().trim().min(2).max(120), unit: z.string().trim().min(1).max(20).default("un"), currentStock: z.coerce.number().nonnegative().default(0), minimumStock: z.coerce.number().nonnegative().default(0), averageCost: z.coerce.number().nonnegative().default(0) });
+export async function GET() { const auth = await requireApiContext(); if ("error" in auth) return auth.error; return NextResponse.json(decimalToNumber(await prisma.inventoryItem.findMany({ where: { restaurantId: auth.ctx.restaurant.id, active: true }, orderBy: { name: "asc" } }))); }
+export async function POST(request: Request) { const auth = await requireApiContext(); if ("error" in auth) return auth.error; if (!canWrite(auth.ctx.membership.role)) return jsonError("Sem permissão", 403); const p = schema.safeParse(await request.json().catch(() => null)); if (!p.success) return jsonError("Dados inválidos"); try { const row = await prisma.inventoryItem.create({ data: { ...p.data, currentStock: p.data.currentStock.toFixed(3), minimumStock: p.data.minimumStock.toFixed(3), averageCost: p.data.averageCost.toFixed(2), restaurantId: auth.ctx.restaurant.id } }); await audit({ restaurantId: auth.ctx.restaurant.id, actorUserId: auth.ctx.user.id, action: "CREATE", entity: "InventoryItem", entityId: row.id, data: p.data }); return NextResponse.json(decimalToNumber(row), { status: 201 }); } catch { return jsonError("Já existe um item com esse nome", 409); } }
