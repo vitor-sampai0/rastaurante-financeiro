@@ -5,7 +5,7 @@ import { prisma } from "@/backend/lib/prisma";
 import { audit } from "@/backend/lib/audit";
 import { decimalToNumber, jsonError, requireApiContext } from "@/backend/lib/http";
 
-const unitSchema = z.enum(["un", "kg", "g", "L", "ml", "cx", "pct", "fd", "dz"]);
+const unitSchema = z.enum(["un", "kg", "g", "L", "ml", "cx", "pct", "fd", "dz", "PP", "P", "M", "G", "GG", "XGG", "2XGG"]);
 const schema = z.object({
   name: z.string().trim().min(2).max(120),
   unit: unitSchema,
@@ -15,7 +15,7 @@ const schema = z.object({
 });
 
 function requiresWholeQuantity(unit: string) {
-  return ["un", "cx", "pct", "fd", "dz"].includes(unit);
+  return ["un", "cx", "pct", "fd", "dz", "PP", "P", "M", "G", "GG", "XGG", "2XGG"].includes(unit);
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -26,7 +26,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return jsonError("Dados inválidos");
   if (requiresWholeQuantity(parsed.data.unit) && (!Number.isInteger(parsed.data.currentStock) || !Number.isInteger(parsed.data.minimumStock))) {
-    return jsonError(`A unidade ${parsed.data.unit} aceita apenas quantidades inteiras`);
+    return jsonError(`O tamanho ${parsed.data.unit} aceita apenas quantidades inteiras`);
   }
 
   const current = await prisma.inventoryItem.findFirst({ where: { id, restaurantId: auth.ctx.restaurant.id } });

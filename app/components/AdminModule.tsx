@@ -188,8 +188,8 @@ const fields: Record<
     { name: "name", label: "Produto", required: true },
     {
       name: "unit",
-      label: "Unidade",
-      type: "select:un:Unidade (un),kg:Quilograma (kg),g:Grama (g),L:Litro (L),ml:Mililitro (ml),cx:Caixa (cx),pct:Pacote (pct),fd:Fardo (fd),dz:Dúzia (dz)",
+      label: "Tamanho",
+      type: "select:PP:PP,P:P,M:M,G:G,GG:GG,XGG:XGG,2XGG:2XGG",
       required: true,
     },
     { name: "currentStock", label: "Estoque atual", type: "number" },
@@ -1228,6 +1228,16 @@ export default function AdminModule({
                     <option value="" disabled>
                       Selecione
                     </option>
+                    {field.name === "unit" &&
+                      editingValue !== null &&
+                      editingValue !== undefined &&
+                      !["PP", "P", "M", "G", "GG", "XGG", "2XGG"].includes(
+                        String(editingValue),
+                      ) && (
+                        <option value={String(editingValue)} hidden>
+                          {String(editingValue)}
+                        </option>
+                      )}
                     {field.type
                       .slice(7)
                       .split(",")
