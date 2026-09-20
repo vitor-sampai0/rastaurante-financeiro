@@ -74,6 +74,9 @@ const schema = z.object({
   deductions: z.coerce.number({ message: "Informe um valor numérico para os descontos." }).nonnegative("Os descontos não podem ser negativos.").default(0),
   dueDate: z.coerce.date({ message: "Data de vencimento inválida." }),
   notes: z.string().max(1000, "Observações muito longas.").nullable().optional(),
+}).refine((data) => data.deductions <= data.grossAmount, {
+  path: ["deductions"],
+  message: "Os descontos não podem superar o valor bruto.",
 }).transform((data) => ({
   ...data,
   referenceMonth: normalizeReferenceMonth(data.referenceMonth) ?? data.referenceMonth,

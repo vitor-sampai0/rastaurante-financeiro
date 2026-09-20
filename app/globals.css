@@ -499,6 +499,53 @@ tbody tr:hover {
   color: var(--foreground);
 }
 
+.movement-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.movement-badge span {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.movement-badge.entry {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.movement-badge.exit {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.inventory-quantity {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+.inventory-quantity small {
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+}
+
+.inventory-current-stock {
+  display: inline-flex;
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.45rem;
+  background: #f0efe9;
+  color: var(--foreground);
+}
+
 .money {
   font-weight: 700;
 }
@@ -528,6 +575,16 @@ tbody tr:hover {
   text-decoration: none;
 }
 
+.danger-action {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.danger-action:hover,
+.danger-action:focus-visible {
+  background: var(--danger-soft);
+}
+
 .payment-picker {
   margin-bottom: 1rem;
 }
@@ -546,6 +603,48 @@ tbody tr:hover {
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
+}
+
+.movement-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(31, 41, 39, 0.45);
+}
+
+.movement-modal-content {
+  width: min(560px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1.25rem, 4vw, 2rem);
+  background: #fbfaf7;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  box-shadow: 0 24px 70px rgba(31, 41, 39, 0.2);
+}
+
+.movement-preview {
+  display: grid;
+  gap: 0.4rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--success-soft);
+  color: var(--foreground);
+}
+
+.movement-preview-error {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.inventory-history-panel {
+  margin-top: 1.5rem;
 }
 
 pre {
